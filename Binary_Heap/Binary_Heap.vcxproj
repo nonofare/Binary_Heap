@@ -130,6 +130,7 @@
     <ClCompile Include="Binary_Heap.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Dynamic_Array\Dynamic_Array\DA.h" />
     <ClInclude Include="BH.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -23,5 +23,8 @@
     <ClInclude Include="BH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Dynamic_Array\Dynamic_Array\DA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
