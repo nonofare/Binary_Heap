@@ -21,12 +21,71 @@ namespace BH {
 			return (2 * index + 2);
 		}
 
-		void HeapifyUp() {
+		bool HeapifyUp(size_t index, bool (*cmp)(T, T) = nullptr) {
+			if (index >= heap.Size()) {
+				return false;
+			}
 
+			if (cmp) {
+				if (cmp(heap[index], heap[NodeParentIndex(index)])) {
+					Swap(index, NodeParentIndex(index));
+					return HeapifyUp(NodeParentIndex(index), cmp);
+				}
+
+				return true;
+			}
+			else if constexpr (std::is_arithmetic_v<T>) {
+				if (heap[index] > heap[NodeParentIndex(index)]) {
+					Swap(index, NodeParentIndex(index));
+					return HeapifyUp(NodeParentIndex(index), cmp);
+				}
+
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 
-		void HeapifyDown() {
+		bool HeapifyDown(size_t index, bool (*cmp)(T, T) = nullptr) {
+			if (index >= heap.Size()) {
+				return false;
+			}
 
+			if (cmp) {
+				if (cmp(heap[index], heap[NodeLeftIndex(index)])) {
+					Swap(index, NodeLeftIndex(index));
+					return HeapifyDown(NodeLeftIndex(index), cmp);
+				}
+				if (cmp(heap[index], heap[NodeRightIndex(index)])) {
+					Swap(index, NodeRightIndex(index));
+					return HeapifyDown(NodeRightIndex(index), cmp);
+				}
+
+				return true;
+			}
+			else if constexpr (std::is_arithmetic_v<T>) {
+				if (heap[index] > heap[NodeLeftIndex(index)]) {
+					Swap(index, NodeLeftIndex(index));
+					return HeapifyDown(NodeLeftIndex(index), cmp);
+				}
+				if (heap[index] > heap[NodeRightIndex(index)]) {
+					Swap(index, NodeRightIndex(index));
+					return HeapifyDown(NodeRightIndex(index), cmp);
+				}
+
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		void Swap(size_t index1, size_t index2) {
+			T temp = heap[index1];
+
+			heap[index1] = heap[index2];
+			heap[index2] = temp;
 		}
 
 	public:
@@ -35,7 +94,7 @@ namespace BH {
 		}
 
 		~BinHeap() {
-			heap.Erase();
+			Erase();
 		}
 
 		size_t Size() const {
@@ -51,28 +110,45 @@ namespace BH {
 		}
 
 		bool Push(T data, bool (*cmp)(T, T) = nullptr) {
+			if (!heap.Push(data)) {
+				return false;
+			}
+			if (!HeapifyUp(heap.Size() - 1)) {
+				return false;
+			}
 
+			return true;
 		}
 
-		bool Pop(size_t index = size - 1) {
+		void Pop(size_t index = 0, bool (*cmp)(T, T) = nullptr) {
+			if (heap.IsEmpty()) {
+				throw std::out_of_range("Heap is empty!");
+			}
 
+			T node = heap[index];
+			Swap(index, heap.Size() - 1);
+			heap.Pop(heap.Size() - 1);
+			HeapifyDown(index, cmp);
 		}
 
-		T ExtractRoot(bool (*cmp)(T, T) = nullptr) {
+		T Poll(bool (*cmp)(T, T) = nullptr) {
+			if (heap.IsEmpty()) {
+				throw std::out_of_range("Heap is empty!");
+			}
 
+			T root = heap[0];
+			Pop(0, cmp);
+
+			return root;
 		}
 
 		bool Erase() {
 			return heap.Erase();
 		}
 
-		const T& operator[](size_t index) const {
-			return heap[index];
-		}
-
 		std::string ToString(unsigned int limit = 0, std::string(*str)(T) = nullptr) const {
 			std::string text = ">>> Binary Heap <<<\n";
-			text += "based on: \n";
+			text += "is based on\n";
 
 			text += heap.ToString(limit, str);
 

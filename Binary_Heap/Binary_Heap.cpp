@@ -54,17 +54,17 @@ int main() {
 
 		start_time = std::chrono::high_resolution_clock::now();
 		for (int j = 0; j < n; j++) {
-			some_object* so = bh->ExtractRoot();
+			some_object* so = bh->Poll();
 			delete so;
 		}
 		end_time = std::chrono::high_resolution_clock::now();
 
 		std::chrono::duration<double> extracting_time = end_time - start_time;
-		std::cout << "Extracting time: " << extracting_time.count() << "s" << std::endl;
+		std::cout << std::endl << "Extracting time: " << extracting_time.count() << "s" << std::endl;
 		std::cout << bh->ToString(3, some_objects_str);
 
 		double total_time = pushing_time.count() + extracting_time.count();
-		std::cout << "Total time: " << total_time << "s" << std::endl;
+		std::cout << std::endl << "Total time: " << total_time << "s" << std::endl;
 
 		bh->Erase();
 	}
