@@ -8,16 +8,15 @@ struct some_object {
 	char field_2;
 };
 
-std::string some_objects_str(some_object* so) {
+std::string so_cmp_string(some_object* so) {
 	return "(" + std::to_string(so->field_1) + ", " + so->field_2 + ")";
 }
 
-bool some_objects_cmp1(some_object* so1, some_object* so2) {
+bool so_cmp_lgreater(some_object* so1, some_object* so2) {
+	if (so1->field_1 == so2->field_1) {
+		return so1->field_2 > so2->field_2;
+	}
 	return so1->field_1 > so2->field_1;
-}
-
-bool some_objects_cmp2(some_object* so1, some_object* so2) {
-	return so1->field_1 == so2->field_1;
 }
 
 int main() {
@@ -39,29 +38,39 @@ int main() {
 		int n = pow(10, i);
 
 		std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
-		for (int j = 0; j < n; j++) {
+		for (int j = 1; j <= n; j++) {
 			some_object* so = new some_object();
 			so->field_1 = rnd_num(dre);
 			so->field_2 = LETTERS[rnd_let(dre)];
-			bh->Push(so, some_objects_cmp1);
+			try {
+				bh->Push(so, so_cmp_lgreater);
+			}
+			catch (const std::exception& ex) {
+				std::cerr << "Eror in push " << j << " -> " << ex.what() << std::endl;
+			}
 			so = nullptr;
 		}
 		std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
 
 		std::chrono::duration<double> pushing_time = end_time - start_time;
 		std::cout << "Pushing time: " << pushing_time.count() << "s" << std::endl;
-		std::cout << bh->ToString(3, some_objects_str);
+		std::cout << bh->ToString(16, so_cmp_string);
 
 		start_time = std::chrono::high_resolution_clock::now();
-		for (int j = 0; j < n; j++) {
-			some_object* so = bh->Poll();
-			delete so;
+		for (int j = 1; j <= n; j++) {
+			try {
+				some_object* so = bh->Poll(so_cmp_lgreater);
+				delete so;
+			}
+			catch (const std::exception& ex) {
+				std::cerr << "Eror in poll " << j << " -> " << ex.what() << std::endl;
+			}
 		}
 		end_time = std::chrono::high_resolution_clock::now();
 
 		std::chrono::duration<double> extracting_time = end_time - start_time;
 		std::cout << std::endl << "Extracting time: " << extracting_time.count() << "s" << std::endl;
-		std::cout << bh->ToString(3, some_objects_str);
+		std::cout << bh->ToString(16, so_cmp_string);
 
 		double total_time = pushing_time.count() + extracting_time.count();
 		std::cout << std::endl << "Total time: " << total_time << "s" << std::endl;

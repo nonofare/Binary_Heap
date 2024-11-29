@@ -21,71 +21,80 @@ namespace BH {
 			return (2 * index + 2);
 		}
 
-		bool HeapifyUp(size_t index, bool (*cmp)(T, T) = nullptr) {
-			if (index >= heap.Size()) {
-				return false;
-			}
+		void HeapifyUp(size_t index, bool (*cmp_lgreater)(T, T) = nullptr) {
+			if (index >= heap.Size()) { throw std::length_error("BH::HeapifyUp(): index (" + std::to_string(index) + ") was greater or egual to heap size (" + std::to_string(int(heap.Size())) + ")"); }
+			
+			if (index) {
+				size_t parent = NodeParentIndex(index);
 
-			if (cmp) {
-				if (cmp(heap[index], heap[NodeParentIndex(index)])) {
-					Swap(index, NodeParentIndex(index));
-					return HeapifyUp(NodeParentIndex(index), cmp);
+				try {
+					if (cmp_lgreater) {
+						if (cmp_lgreater(heap[index], heap[parent])) {
+							Swap(index, parent);
+							HeapifyUp(parent, cmp_lgreater);
+						}
+					}
+					else if constexpr (std::is_arithmetic_v<T>) {
+						if (heap[index] > heap[parent]) {
+							Swap(index, parent);
+							HeapifyUp(parent, cmp_lgreater);
+						}
+					}
+					else {
+						throw std::runtime_error("T was not arithmetic and no cmp was provided");
+					}
 				}
-
-				return true;
-			}
-			else if constexpr (std::is_arithmetic_v<T>) {
-				if (heap[index] > heap[NodeParentIndex(index)]) {
-					Swap(index, NodeParentIndex(index));
-					return HeapifyUp(NodeParentIndex(index), cmp);
+				catch (const std::exception& ex) {
+					throw std::runtime_error("BH::HeapifyUp() -> " + std::string(ex.what()));
 				}
-
-				return true;
-			}
-			else {
-				return false;
 			}
 		}
 
-		bool HeapifyDown(size_t index, bool (*cmp)(T, T) = nullptr) {
-			if (index >= heap.Size()) {
-				return false;
-			}
+		void HeapifyDown(size_t index, bool (*cmp_lgreater)(T, T) = nullptr) {
+			if (index >= heap.Size()) { throw std::length_error("BH::HeapifyDown(): index (" + std::to_string(index) + ") was greater or egual to heap size (" + std::to_string(int(heap.Size())) + ")"); }
 
-			if (cmp) {
-				if (cmp(heap[index], heap[NodeLeftIndex(index)])) {
-					Swap(index, NodeLeftIndex(index));
-					return HeapifyDown(NodeLeftIndex(index), cmp);
+			size_t left = NodeLeftIndex(index);
+			size_t right = NodeRightIndex(index);
+			size_t largest = index;
+
+			try {
+				if (cmp_lgreater) {
+					if (left < heap.Size() && cmp_lgreater(heap[left], heap[largest])) {
+						largest = left;
+					}
+					if (right < heap.Size() && cmp_lgreater(heap[right], heap[largest])) {
+						largest = right;
+					}
 				}
-				if (cmp(heap[index], heap[NodeRightIndex(index)])) {
-					Swap(index, NodeRightIndex(index));
-					return HeapifyDown(NodeRightIndex(index), cmp);
+				else if constexpr (std::is_arithmetic_v<T>) {
+					if (left < heap.Size() && heap[left] > heap[largest]) {
+						largest = left;
+					}
+					if (right < heap.Size() && heap[right] > heap[largest]) {
+						largest = right;
+					}
+				}
+				else {
+					throw std::runtime_error("T was not arithmetic and no cmp was provided");
 				}
 
-				return true;
-			}
-			else if constexpr (std::is_arithmetic_v<T>) {
-				if (heap[index] > heap[NodeLeftIndex(index)]) {
-					Swap(index, NodeLeftIndex(index));
-					return HeapifyDown(NodeLeftIndex(index), cmp);
+				if (largest != index) {
+					Swap(index, largest);
+					HeapifyDown(largest, cmp_lgreater);
 				}
-				if (heap[index] > heap[NodeRightIndex(index)]) {
-					Swap(index, NodeRightIndex(index));
-					return HeapifyDown(NodeRightIndex(index), cmp);
-				}
-
-				return true;
 			}
-			else {
-				return false;
+			catch (const std::exception& ex) {
+				throw std::runtime_error("BH::HeapifyDown() -> " + std::string(ex.what()));
 			}
 		}
 
 		void Swap(size_t index1, size_t index2) {
-			T temp = heap[index1];
+			if (index1 != index2) {
+				T temp = heap[index1];
 
-			heap[index1] = heap[index2];
-			heap[index2] = temp;
+				heap[index1] = heap[index2];
+				heap[index2] = temp;
+			}
 		}
 
 	public:
@@ -105,52 +114,59 @@ namespace BH {
 			return heap.Capacity();
 		}
 
-		bool IsEmpty() const {
-			return heap.IsEmpty();
+		void Push(T data, bool (*cmp_lgreater)(T, T) = nullptr) {
+			try {
+				heap.Push(data);
+				HeapifyUp(heap.Size() - 1, cmp_lgreater);
+			}
+			catch (const std::exception& ex) {
+				throw std::runtime_error("BH::Push() -> " + std::string(ex.what()));
+			}
 		}
 
-		bool Push(T data, bool (*cmp)(T, T) = nullptr) {
-			if (!heap.Push(data)) {
-				return false;
-			}
-			if (!HeapifyUp(heap.Size() - 1)) {
-				return false;
-			}
+		void Pop(size_t index = 0, bool (*cmp_lgreater)(T, T) = nullptr) {
+			if (index >= heap.Size()) { throw std::length_error("BH::Pop(): index (" + std::to_string(index) + ") was greater or equal to heap.size (" + std::to_string(int(heap.Size())) + ")"); }
 
-			return true;
+			try {
+				Swap(index, heap.Size() - 1);
+				heap.Pop(heap.Size() - 1);
+				if (heap.Size()) {
+					HeapifyDown(index, cmp_lgreater);
+				}
+			}
+			catch (const std::exception& ex) {
+				throw std::runtime_error("BH::Pop() -> " + std::string(ex.what()));
+			}
 		}
 
-		void Pop(size_t index = 0, bool (*cmp)(T, T) = nullptr) {
-			if (heap.IsEmpty()) {
-				throw std::out_of_range("Heap is empty!");
-			}
-
-			T node = heap[index];
-			Swap(index, heap.Size() - 1);
-			heap.Pop(heap.Size() - 1);
-			HeapifyDown(index, cmp);
-		}
-
-		T Poll(bool (*cmp)(T, T) = nullptr) {
-			if (heap.IsEmpty()) {
-				throw std::out_of_range("Heap is empty!");
-			}
+		T Poll(bool (*cmp_greater)(T, T) = nullptr) {
+			if (!heap.Size()) { throw std::length_error("BH::Poll(): heap was empty"); }
 
 			T root = heap[0];
-			Pop(0, cmp);
+			try {
+				Pop(0, cmp_greater);
+			}
+			catch (const std::exception& ex) {
+				throw std::runtime_error("BH::Poll() -> " + std::string(ex.what()));
+			}
 
 			return root;
 		}
 
-		bool Erase() {
-			return heap.Erase();
+		void Erase() {
+			try {
+				heap.Erase();
+			}
+			catch (const std::exception& ex) {
+				throw std::runtime_error("BH::Erase() -> " + std::string(ex.what()));
+			}
 		}
 
-		std::string ToString(unsigned int limit = 0, std::string(*str)(T) = nullptr) const {
+		std::string ToString(unsigned int limit = 0, std::string(*cmp_string)(T) = nullptr) const {
 			std::string text = ">>> Binary Heap <<<\n";
 			text += "is based on\n";
 
-			text += heap.ToString(limit, str);
+			text += heap.ToString(limit, cmp_string);
 
 			return text;
 		}
